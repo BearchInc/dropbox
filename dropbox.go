@@ -182,6 +182,14 @@ type Entry struct {
 	ThumbExists          bool      `json:"thumb_exists,omitempty"` // true if a thumbnail is available for this entry.
 	Modifier             *Modifier `json:"modifier"`               // last user to edit the file if in a shared folder
 	ParentSharedFolderID string    `json:"parent_shared_folder_id,omitempty"`
+	PhotoInfo			 *MediaInfo	`json:"photo_info"`
+	VideoInfo			 *MediaInfo	`json:"video_info"`
+}
+
+type MediaInfo struct {
+	Duration			int64		`json:"duration,omitempty"`
+	LatLong				[]float64	`json:"lat_long,omitempty"`
+	TimeTaken			*DBTime		`json:"time_taken,omitempty"`
 }
 
 // Link for sharing a file.
@@ -679,6 +687,7 @@ func (db *Dropbox) doRequest(method, path string, params *url.Values, receiver i
 	if body, err = getResponse(response); err != nil {
 		return err
 	}
+
 	err = json.Unmarshal(body, receiver)
 	return err
 }
@@ -749,6 +758,9 @@ func (db *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
 	if len(pathPrefix) != 0 {
 		params.Set("path_prefix", pathPrefix)
 	}
+
+	params.Set("include_media_info", "true")
+
 	err := db.doRequest("POST", "delta", params, &dpp)
 	rv = DeltaPage{Reset: dpp.Reset, HasMore: dpp.HasMore, Cursor: dpp.Cursor}
 	rv.Entries = make([]DeltaEntry, 0, len(dpp.Entries))
